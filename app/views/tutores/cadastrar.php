@@ -10,7 +10,7 @@
 <body>
     <div class="container mt-5">
         <h2>Cadastrar Tutor</h2>
-        <form action="../../controllers/TutorController.php" method="POST">
+        <form action="../../controllers/TutorController.php?acao=cadastrar" method="POST">
             <div class="mb-3">
              <label>Nome</label>
               <input type="text" name="cpf" class="form-control">
