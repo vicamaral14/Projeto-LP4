@@ -33,16 +33,30 @@ if ($acao == "cadastrar") {
     // s = texto (string)
     // i = número inteiro
     // d = número decimal
-    $comando->bind_param(
-        "sssid si",
-        $nome,
-        $especie,
-        $raca,
-        $idade,
-        $peso,
-        $sexo,
-        $id_tutor
-    );
+   // Cadastro
+$comando->bind_param(
+    "sssidsi",
+    $nome,
+    $especie,
+    $raca,
+    $idade,
+    $peso,
+    $sexo,
+    $id_tutor
+);
+
+// Atualização
+$comando->bind_param(
+    "sssidsii",
+    $nome,
+    $especie,
+    $raca,
+    $idade,
+    $peso,
+    $sexo,
+    $id_tutor,
+    $id
+);
 
     // Executa o INSERT.
     $comando->execute();
