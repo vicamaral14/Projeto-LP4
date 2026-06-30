@@ -110,7 +110,7 @@ $database = "clinica_veterinaria";
 No navegador, acesse:
 
 ```
-http://localhost/clinica-veterinaria/
+http://localhost/Projeto-LP4
 ```
 
 Após isso, o sistema estará pronto para utilização.
