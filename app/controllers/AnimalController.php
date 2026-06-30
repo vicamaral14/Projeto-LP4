@@ -45,17 +45,15 @@ $comando->bind_param(
     $id_tutor
 );
 
-// Atualização
 $comando->bind_param(
-    "sssidsii",
+    "sssidsi",
     $nome,
     $especie,
     $raca,
     $idade,
     $peso,
     $sexo,
-    $id_tutor,
-    $id
+    $id_tutor
 );
 
     // Executa o INSERT.
