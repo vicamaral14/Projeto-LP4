@@ -36,7 +36,7 @@ O projeto foi desenvolvido utilizando a arquitetura **MVC (Model-View-Controller
 ## 1. Clonar o repositório
 
 ```bash
-git clone https://github.com/SEU-USUARIO/clinica-veterinaria.git
+git clone https://github.com/SEU-USUARIO/Projeto-LP4.git
 ```
 
 Ou faça o download do projeto em formato `.zip` e extraia os arquivos.
