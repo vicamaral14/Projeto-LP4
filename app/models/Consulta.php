@@ -1,68 +1,54 @@
 <?php
 
-class Consulta {
+class Animal {
     private $conn;
 
     public function __construct($conexao) {
         $this->conn = $conexao;
     }
 
-    // 1. Listar todas as consultas trazendo os dados do animal e tutor
+    // 1. Listar todos os animais trazendo o nome do tutor associado
     public function listar() {
-        $sql = "SELECT c.id, c.id_animal, c.veterinario, c.data_consulta, c.hora, c.descricao, c.valor,
-                       a.nome as animal_nome, t.nome as tutor_nome 
-                FROM consultas c
-                INNER JOIN animais a ON c.id_animal = a.id
-                LEFT JOIN tutores t ON a.id_tutor = t.id
-                ORDER BY c.data_consulta DESC, c.hora DESC";
+        $sql = "SELECT a.id, a.nome, a.especie, a.raca, a.idade, a.peso, a.sexo, a.id_tutor, t.nome as tutor_nome 
+                FROM animais a 
+                LEFT JOIN tutores t ON a.id_tutor = t.id 
+                ORDER BY a.nome";
         $resultado = $this->conn->query($sql);
 
-        $consultas = [];
+        $animais = [];
         if ($resultado && $resultado->num_rows > 0) {
             while ($linha = $resultado->fetch_assoc()) {
-                $consultas[] = $linha;
+                $animais[] = $linha;
             }
         }
-        return $consultas;
+        return $animais;
     }
 
-    // 2. Cadastrar uma nova consulta
-    public function cadastrar($id_animal, $veterinario, $data_consulta, $hora_consulta, $descricao, $preco) {
-        $stmt = $this->conn->prepare("INSERT INTO consultas (id_animal, veterinario, data_consulta, hora, descricao, valor) VALUES (?, ?, ?, ?, ?, ?)");
-        // i = id_animal, s = veterinario, s = data_consulta, s = hora, s = descricao, d = valor
-        $stmt->bind_param("issssd", $id_animal, $veterinario, $data_consulta, $hora_consulta, $descricao, $preco);
+    // 2. Cadastrar novo animal
+    public function cadastrar($nome, $especie, $raca, $idade, $peso, $sexo, $id_tutor) {
+        $stmt = $this->conn->prepare("INSERT INTO animais (nome, especie, raca, idade, peso, sexo, id_tutor) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssidsi", $nome, $especie, $raca, $idade, $peso, $sexo, $id_tutor);
         return $stmt->execute();
     }
 
-    // 3. Buscar uma consulta por ID para preencher a tela de edição
+    // 3. Buscar um animal por ID para preencher o formulário de edição
     public function buscarPorId($id) {
-        $stmt = $this->conn->prepare("SELECT id, id_animal, veterinario, data_consulta, hora as hora_consulta, descricao, valor as preco FROM consultas WHERE id = ?");
+        $stmt = $this->conn->prepare("SELECT id, nome, especie, raca, idade, peso, sexo, id_tutor FROM animais WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
         return $stmt->get_result()->fetch_assoc();
     }
 
-    // 4. Atualizar os dados da consulta (ORDEM TOTALMENTE CORRIGIDA)
-    public function atualizar($id, $id_animal, $veterinario, $data_consulta, $hora_consulta, $descricao, $preco) {
-        // Ordem na Query SQL: 1º id_animal, 2º veterinario, 3º data_consulta, 4º hora, 5º descricao, 6º valor, 7º id (no WHERE)
-        $stmt = $this->conn->prepare("UPDATE consultas SET id_animal = ?, veterinario = ?, data_consulta = ?, hora = ?, descricao = ?, valor = ? WHERE id = ?");
-        
-        // A ordem no bind_param PRECISA seguir rigorosamente a sequência dos pontos de interrogação (?) acima:
-        // ? (id_animal -> i)
-        // ? (veterinario -> s)
-        // ? (data_consulta -> s)
-        // ? (hora_consulta -> s)
-        // ? (descricao -> s)
-        // ? (preco -> d)
-        // ? (id -> i)
-        $stmt->bind_param("issssdi", $id_animal, $veterinario, $data_consulta, $hora_consulta, $descricao, $preco, $id);
-        
+    // 4. Atualizar dados do animal cadastrado
+    public function atualizar($id, $nome, $especie, $raca, $idade, $peso, $sexo, $id_tutor) {
+        $stmt = $this->conn->prepare("UPDATE animais SET nome = ?, especie = ?, raca = ?, idade = ?, peso = ?, sexo = ?, id_tutor = ? WHERE id = ?");
+        $stmt->bind_param("sssidsii", $nome, $especie, $raca, $idade, $peso, $sexo, $id_tutor, $id);
         return $stmt->execute();
     }
 
-    // 5. Excluir uma consulta
+    // 5. Excluir animal do banco de dados
     public function excluir($id) {
-        $stmt = $this->conn->prepare("DELETE FROM consultas WHERE id = ?");
+        $stmt = $this->conn->prepare("DELETE FROM animais WHERE id = ?");
         $stmt->bind_param("i", $id);
         return $stmt->execute();
     }

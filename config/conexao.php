@@ -1,21 +1,20 @@
 <?php 
-    $host ="localhost"; 
-    //endereço do servidor do BD
-    $usuario = "root"; 
-    // Nome do usuario que será utilizado para acessar O MySQL
-    $senha = ""; 
-    // No XAMPP, por padrão, a senha costuma ser vazia.
-    $banco = "clinica_veterinaria"; 
-    // Nome do banco de dados que será utilizado pelo sistema.
+$host = "localhost"; 
+$usuario = "root"; 
+$senha = ""; 
+$banco = "clinica_veterinaria"; 
 
-    $conn =new mysqli($host, $usuario, $senha, $banco);
-    // Cria uma nova conexão com o banco de dados.
-    // mysqli é uma classe do PHP usada para trabalhar com MySQL.
-    if ($conn->connect_error) { // Verifica se ocorreu algum erro ao tentar conectar.
-        die ("Erro na conexão: " . $conn->connect_error);
-        // Encerra a execução do programa e exibe a mensagem de erro.
-        // O operador "." concatena textos.
-        // $conn->connect_error contém a descrição do erro ocorrido.
+// Cria a conexão padrão do sistema
+$conn = new mysqli($host, $usuario, $senha, $banco);
 
-    }
+// Garante compatibilidade caso outros arquivos usem o nome $conexao
+$conexao = $conn;
+
+// Verifica se houve erro na tentativa de conexão
+if ($conn->connect_error) { 
+    die("Erro na conexão: " . $conn->connect_error);
+}
+
+// Configura o banco para aceitar acentuação corretamente (Ex: Ç, Á, é)
+$conn->set_charset("utf8mb4");
 ?>
