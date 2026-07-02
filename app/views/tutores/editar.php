@@ -10,26 +10,43 @@ if (!isset($_SESSION['usuario_id'])) {
 // Inclui o controlador correto de listagem de tutores
 include_once "../../controllers/TutorListarController.php";
 
+$id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+if ($id <= 0) { 
+    header("Location: listar.php"); 
+    exit; 
+}
+
 $mensagemErro = "";
 
-// Processa o envio do formulário para cadastrar
+// Processa o envio ou busca as informações atuais do tutor
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $nome = trim($_POST['nome'] ?? '');
     $cpf = trim($_POST['cpf'] ?? '');
     $telefone = trim($_POST['telefone'] ?? '');
     $email = trim($_POST['email'] ?? '');
 
-    // Validação estrita no backend antes de mandar para o banco
+    // Validação estrita no backend: impede salvar campos cruciais vazios
     if (!empty($nome) && !empty($cpf) && !empty($email)) {
-        $resultado = $tutorController->processarCadastro();
+        // Instancia o model e executa a atualização usando o controlador
+        $resultado = $tutorController->processarEdicao($id);
         
+        // Se o processamento do controller redirecionar, o código abaixo não roda. 
+        // Caso retorne uma string de erro, nós capturamos aqui:
         if (is_string($resultado)) {
             $mensagemErro = $resultado;
         }
     } else {
-        $mensagemErro = "Os campos Nome, CPF e E-mail são obrigatórios para realizar o cadastro!";
+        $mensagemErro = "Os campos Nome, CPF e E-mail são obrigatórios e prioritários!";
     }
 }
+
+// Busca os dados atuais do tutor para preencher o formulário
+$dadosTutor = $tutorController->listarTutores(); // Apenas para inicializar a conexão se necessário
+// Altere as linhas de inclusão do banco e do model (por volta da linha 45) para:
+include_once "../../../config/conexao.php";
+include_once "../../models/Tutor.php";
+$tutorModel = new Tutor($conn);
+$dadosTutor = $tutorModel->buscarPorId($id);
 
 include_once "../includes/header.php";
 ?>
@@ -43,8 +60,8 @@ include_once "../includes/header.php";
     </div>
 
     <div class="mb-4">
-        <h2 class="fw-bold text-dark mb-1">Cadastrar Tutor</h2>
-        <p class="text-muted small">Insira os dados para registrar um novo tutor. Campos com <span class="text-danger">*</span> são obrigatórios.</p>
+        <h2 class="fw-bold text-dark mb-1">Editar Tutor</h2>
+        <p class="text-muted small">Altere os dados do cadastro do tutor selecionado. Campos com <span class="text-danger">*</span> são obrigatórios.</p>
     </div>
 
     <?php if (!empty($mensagemErro)): ?>
@@ -54,35 +71,35 @@ include_once "../includes/header.php";
     <?php endif; ?>
 
     <div class="card shadow-sm border-0 p-4" style="border-radius: 12px; background-color: #ffffff;">
-        <form action="cadastrar.php" method="POST" autocomplete="off" class="needs-validation" novalidate>
+        <form action="editar.php?id=<?= $id ?>" method="POST" autocomplete="off" class="needs-validation" novalidate>
             
             <div class="mb-3">
                 <label for="nome" class="form-label text-secondary small fw-bold">Nome Completo <span class="text-danger">*</span></label>
-                <input type="text" name="nome" id="nome" class="form-control" style="border-radius: 8px;" required placeholder="Ex: João Silva">
+                <input type="text" name="nome" id="nome" class="form-control" style="border-radius: 8px;" required value="<?= htmlspecialchars($dadosTutor['nome'] ?? '') ?>">
                 <div class="invalid-feedback">Por favor, insira o nome completo do tutor.</div>
             </div>
 
             <div class="mb-3">
                 <label for="cpf" class="form-label text-secondary small fw-bold">CPF <span class="text-danger">*</span></label>
-                <input type="text" name="cpf" id="cpf" class="form-control" style="border-radius: 8px;" required placeholder="000.000.000-00">
+                <input type="text" name="cpf" id="cpf" class="form-control" style="border-radius: 8px;" required value="<?= htmlspecialchars($dadosTutor['cpf'] ?? '') ?>">
                 <div class="invalid-feedback">O CPF é obrigatório para o cadastro.</div>
             </div>
 
             <div class="mb-3">
                 <label for="telefone" class="form-label text-secondary small fw-bold">Telefone</label>
-                <input type="text" name="telefone" id="telefone" class="form-control" style="border-radius: 8px;" placeholder="(00) 00000-0000">
+                <input type="text" name="telefone" id="telefone" class="form-control" style="border-radius: 8px;" value="<?= htmlspecialchars($dadosTutor['telefone'] ?? '') ?>">
             </div>
 
             <div class="mb-4">
                 <label for="email" class="form-label text-secondary small fw-bold">E-mail <span class="text-danger">*</span></label>
-                <input type="email" name="email" id="email" class="form-control" style="border-radius: 8px;" required placeholder="exemplo@gmail.com">
+                <input type="email" name="email" id="email" class="form-control" style="border-radius: 8px;" required value="<?= htmlspecialchars($dadosTutor['email'] ?? '') ?>">
                 <div class="invalid-feedback">Insira um endereço de e-mail válido.</div>
             </div>
 
             <div class="d-flex justify-content-end gap-2">
                 <a href="listar.php" class="btn btn-light px-4" style="border-radius: 8px;">Cancelar</a>
                 <button type="submit" class="btn btn-primary px-5 fw-semibold shadow-sm" style="border-radius: 8px;">
-                    Cadastrar Tutor
+                    Salvar Alterações
                 </button>
             </div>
 
@@ -91,7 +108,7 @@ include_once "../includes/header.php";
 </main>
 
 <script>
-// Impedir envios se houver campos inválidos vazios
+// JavaScript nativo do Bootstrap para impedir envios de formulários inválidos instantaneamente
 (function () {
   'use strict'
   var forms = document.querySelectorAll('.needs-validation')
