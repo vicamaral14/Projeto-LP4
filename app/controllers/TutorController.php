@@ -1,50 +1,76 @@
 <?php
+// Garante o caminho correto para a conexão e para o Model
 include_once __DIR__ . "/../../config/conexao.php";
-include_once __DIR__ . "/../models/Consulta.php";
+include_once __DIR__ . "/../models/Tutor.php";
 
-class ConsultaController {
-    private $conn;
-    private $consultaModel;
+class TutorController {
+    private $model;
 
     public function __construct($db) {
-        $this->conn = $db;
-        $this->consultaModel = new Consulta($db);
+        // Inicializa o Model passando a conexão estável
+        $this->model = new Tutor($db);
     }
 
-    // Listar todas as consultas agendadas
-    public function listarConsultas() {
-        return $this->consultaModel->listar();
+    // 1. Listar
+    public function listarTutores() {
+        return $this->model->listar();
     }
 
-    // Carregar os animais disponíveis para as caixas de seleção (Select)
-    public function listarAnimaisDisponiveis() {
-        $sql = "SELECT a.id, a.nome, t.nome as tutor_nome 
-                FROM animais a 
-                LEFT JOIN tutores t ON a.id_tutor = t.id 
-                ORDER BY a.nome";
-        $resultado = $this->conn->query($sql);
-        
-        $animais = [];
-        if ($resultado && $resultado->num_rows > 0) {
-            while ($linha = $resultado->fetch_assoc()) {
-                $animais[] = $linha;
+    // 2. Cadastrar
+    public function processarCadastro() {
+        if ($_SERVER["REQUEST_METHOD"] == "POST") {
+            $nome = trim($_POST['nome'] ?? '');
+            $cpf = trim($_POST['cpf'] ?? '');
+            $telefone = trim($_POST['telefone'] ?? '');
+            $email = trim($_POST['email'] ?? '');
+
+            if (!empty($nome) && !empty($cpf) && !empty($telefone) && !empty($email)) {
+                $sucesso = $this->model->cadastrar($nome, $cpf, $telefone, $email);
+                if ($sucesso) {
+                    header("Location: listar.php?msg=sucesso");
+                    exit;
+                } else {
+                    return "Erro ao salvar no banco de dados.";
+                }
+            } else {
+                return "Por favor, preencha todos os campos obrigatórios.";
             }
         }
-        return $animais;
+        return null;
     }
 
-    // Processar o agendamento de uma nova consulta
-    public function processarCadastro($id_animal, $veterinario, $data_consulta, $hora_consulta, $descricao, $preco) {
-        if ($id_animal > 0 && !empty($veterinario) && !empty($data_consulta) && !empty($hora_consulta) && $preco > 0) {
-            return $this->consultaModel->cadastrar($id_animal, $veterinario, $data_consulta, $hora_consulta, $descricao, $preco);
+    // 3. Carregar dados para Edição
+    public function carregarTutor($id) {
+        return $this->model->buscarPorId($id);
+    }
+
+    // 4. Salvar Edição
+    public function processarEdicao() {
+        if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['id'])) {
+            $id = intval($_POST['id']);
+            $nome = trim($_POST['nome'] ?? '');
+            $cpf = trim($_POST['cpf'] ?? '');
+            $telefone = trim($_POST['telefone'] ?? '');
+            $email = trim($_POST['email'] ?? '');
+
+            if (!empty($nome) && !empty($cpf) && !empty($telefone) && !empty($email)) {
+                if ($this->model->atualizar($id, $nome, $cpf, $telefone, $email)) {
+                    header("Location: listar.php?msg=editado");
+                    exit;
+                } else {
+                    return "Erro ao atualizar os dados.";
+                }
+            } else {
+                return "Todos os campos são obrigatórios.";
+            }
         }
-        return false;
+        return null;
     }
 
-    // Processar a exclusão de uma consulta
+    // 5. Excluir (O seu método integrado)
     public function processarExclusao($id) {
         if ($id > 0) {
-            if ($this->consultaModel->excluir($id)) {
+            if ($this->model->excluir($id)) {
                 header("Location: listar.php?msg=excluido");
                 exit;
             }
@@ -54,6 +80,6 @@ class ConsultaController {
     }
 }
 
-// Instanciação global para uso nas views de consultas
-$consultaController = new ConsultaController($conn);
+// Instancia o controller passando a conexão global $conn
+$tutorController = new TutorController($conn);
 ?>

@@ -1,135 +1,66 @@
 <?php
+include_once __DIR__ . "/../../config/conexao.php";
+include_once __DIR__ . "/../models/Animal.php";
+include_once __DIR__ . "/../models/Tutor.php"; 
 
-// Inclui a conexão com o banco de dados.
-// Este arquivo está em app/controllers, então volta duas pastas até a raiz.
-include("../../config/conexao.php");
+class AnimalController {
+    private $animalModel;
+    private $tutorModel;
 
-// Recebe a ação pela URL ou pelo formulário.
-// Se não receber nada, usa uma string vazia.
-$acao = $_GET['acao'] ?? $_POST['acao'] ?? '';
+    public function __construct($db) {
+        $this->animalModel = new Animal($db);
+        $this->tutorModel = new Tutor($db);
+    }
 
-// Ação para cadastrar um animal.
-if ($acao == "cadastrar") {
+    // Listar todos os animais
+    public function listarAnimais() {
+        return $this->animalModel->listar();
+    }
 
-    // Recebe os dados preenchidos no formulário.
-    $nome = $_POST['nome'];
-    $especie = $_POST['especie'];
-    $raca = $_POST['raca'];
-    $idade = $_POST['idade'];
-    $peso = $_POST['peso'];
-    $sexo = $_POST['sexo'];
-    $id_tutor = $_POST['id_tutor'];
+    // Buscar tutores para a caixinha de seleção (Select) do formulário
+    public function listarTutoresDisponiveis() {
+        return $this->tutorModel->listar();
+    }
 
-    // Cria o comando SQL para inserir o animal.
-    // Os ? serão substituídos pelos valores recebidos.
-    $sql = "INSERT INTO animais
-            (nome, especie, raca, idade, peso, sexo, id_tutor)
-            VALUES (?, ?, ?, ?, ?, ?, ?)";
+    // Processar Cadastro com os campos reais do Banco
+    public function processarCadastro() {
+        if ($_SERVER["REQUEST_METHOD"] == "POST") {
+            $nome = trim($_POST['nome'] ?? '');
+            $especie = trim($_POST['especie'] ?? '');
+            $raca = trim($_POST['raca'] ?? '');
+            $idade = isset($_POST['idade']) && $_POST['idade'] !== '' ? intval($_POST['idade']) : null;
+            $peso = isset($_POST['peso']) && $_POST['peso'] !== '' ? floatval(str_replace(',', '.', $_POST['peso'])) : null;
+            $sexo = trim($_POST['sexo'] ?? '');
+            $id_tutor = intval($_POST['id_tutor'] ?? 0);
 
-    // Prepara o comando SQL.
-    $comando = $conn->prepare($sql);
+            // Validação dos campos obrigatórios
+            if (!empty($nome) && !empty($especie) && $id_tutor > 0) {
+                if ($this->animalModel->cadastrar($nome, $especie, $raca, $idade, $peso, $sexo, $id_tutor)) {
+                    header("Location: listar.php?msg=sucesso");
+                    exit;
+                } else {
+                    return "Erro ao salvar o animal no banco de dados.";
+                }
+            } else {
+                return "Nome, Espécie e Tutor são obrigatórios.";
+            }
+        }
+        return null;
+    }
 
-    // Liga os valores aos ? da consulta.
-    // s = texto (string)
-    // i = número inteiro
-    // d = número decimal
-   // Cadastro
-$comando->bind_param(
-    "sssidsi",
-    $nome,
-    $especie,
-    $raca,
-    $idade,
-    $peso,
-    $sexo,
-    $id_tutor
-);
-
-$comando->bind_param(
-    "sssidsi",
-    $nome,
-    $especie,
-    $raca,
-    $idade,
-    $peso,
-    $sexo,
-    $id_tutor
-);
-
-    // Executa o INSERT.
-    $comando->execute();
-
-    // Retorna para a página de listagem.
-    header("Location: ../views/animais/listar.php");
-    exit;
+    // Processar Exclusão
+    public function processarExclusao($id) {
+        if ($id > 0) {
+            if ($this->animalModel->excluir($id)) {
+                header("Location: listar.php?msg=excluido");
+                exit;
+            }
+        }
+        header("Location: listar.php?msg=erro");
+        exit;
+    }
 }
 
-// Ação para atualizar um animal.
-if ($acao == "atualizar") {
-
-    // Recebe os dados do formulário de edição.
-    $id = $_POST['id'];
-    $nome = $_POST['nome'];
-    $especie = $_POST['especie'];
-    $raca = $_POST['raca'];
-    $idade = $_POST['idade'];
-    $peso = $_POST['peso'];
-    $sexo = $_POST['sexo'];
-    $id_tutor = $_POST['id_tutor'];
-
-    // Atualiza os dados do animal escolhido pelo ID.
-    $sql = "UPDATE animais
-            SET nome = ?, especie = ?, raca = ?, idade = ?,
-                peso = ?, sexo = ?, id_tutor = ?
-            WHERE id = ?";
-
-    // Prepara a consulta.
-    $comando = $conn->prepare($sql);
-
-    // Liga os valores aos ?.
-    $comando->bind_param(
-        "sssidsii",
-        $nome,
-        $especie,
-        $raca,
-        $idade,
-        $peso,
-        $sexo,
-        $id_tutor,
-        $id
-    );
-
-    // Executa o UPDATE.
-    $comando->execute();
-
-    // Retorna para a lista.
-    header("Location: ../views/animais/listar.php");
-    exit;
-}
-
-// Ação para excluir um animal.
-if ($acao == "excluir") {
-
-    // Recebe o ID do animal pela URL.
-    $id = $_GET['id'];
-
-    // Cria o SQL de exclusão.
-    $sql = "DELETE FROM animais WHERE id = ?";
-
-    // Prepara o SQL.
-    $comando = $conn->prepare($sql);
-
-    // Associa o ID ao ?.
-    $comando->bind_param("i", $id);
-
-    // Executa a exclusão.
-    $comando->execute();
-
-    // Retorna para a lista.
-    header("Location: ../views/animais/listar.php");
-    exit;
-}
-
-// Se a ação for inválida, retorna para a lista.
-header("Location: ../views/animais/listar.php");
-exit;
+// Instancia global
+$animalController = new AnimalController($conn);
+?>
